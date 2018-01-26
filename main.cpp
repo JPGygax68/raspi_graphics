@@ -13,6 +13,9 @@
 
 #include <bcm_host.h>
 
+#include <fcntl.h>
+#include <linux/input.h>
+
 typedef struct
 {
     EGLDisplay display;
@@ -75,7 +78,8 @@ void init_egl(EGL_STATE_T *state)
     assert(state->context!=EGL_NO_CONTEXT);
 }
 
-void init_dispmanx(EGL_STATE_T *state) {
+void init_dispmanx(EGL_STATE_T *state) 
+{
     EGL_DISPMANX_WINDOW_T *nativewindow = &p_state->nativewindow;  
     int32_t success = 0;   
     uint32_t screen_width;
@@ -90,9 +94,7 @@ void init_dispmanx(EGL_STATE_T *state) {
     bcm_host_init();
 
     // create an EGL window surface
-    success = graphics_get_display_size(0 /* LCD */, 
-					&screen_width, 
-					&screen_height);
+    success = graphics_get_display_size(0 /* LCD */, &screen_width, &screen_height);
     assert( success >= 0 );
 
     dst_rect.x = 0;
@@ -125,12 +127,11 @@ void init_dispmanx(EGL_STATE_T *state) {
     printf("Got a Dispmanx window\n");
 }
 
-void egl_from_dispmanx(EGL_STATE_T *state) { 
+void egl_from_dispmanx(EGL_STATE_T *state)
+{ 
     EGLBoolean result;
 
-    state->surface = eglCreateWindowSurface(state->display, 
-					    state->config, 
-					    &p_state->nativewindow, NULL );
+    state->surface = eglCreateWindowSurface(state->display, state->config, &p_state->nativewindow, NULL );
     assert(state->surface != EGL_NO_SURFACE);
 
     // connect the context to the surface
@@ -138,37 +139,45 @@ void egl_from_dispmanx(EGL_STATE_T *state) {
     assert(EGL_FALSE != result);
 }
 
-void cleanup(int s) {
-    if (p_state->surface != EGL_NO_SURFACE &&
-	eglDestroySurface(p_state->display, p_state->surface)) {
-	printf("Surface destroyed ok\n");
+void cleanup(int s) 
+{
+    if (p_state->surface != EGL_NO_SURFACE && eglDestroySurface(p_state->display, p_state->surface)) {
+	   printf("Surface destroyed ok\n");
     }
-    if (p_state->context !=  EGL_NO_CONTEXT &&
-	eglDestroyContext(p_state->display, p_state->context)) {
+    if (p_state->context !=  EGL_NO_CONTEXT && eglDestroyContext(p_state->display, p_state->context)) {
         printf("Main context destroyed ok\n");
     }
-    if (p_state->display != EGL_NO_DISPLAY &&
-	eglTerminate(p_state->display)) {
+    if (p_state->display != EGL_NO_DISPLAY && eglTerminate(p_state->display)) {
         printf("Display terminated ok\n");
     }
     if (eglReleaseThread()) {
         printf("EGL thread resources released ok\n");
     }
     if (vc_dispmanx_display_close(p_state->dispman_display) == 0) {
-	printf("Dispmanx display rleased ok\n");
+	   printf("Dispmanx display rleased ok\n");
     }
     bcm_host_deinit();
     exit(s);
 }
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 { 
     signal(SIGINT, cleanup);
     
+    int fd = open("/dev/input/event2", O_RDONLY);
+    if (fd < 0) {
+        fprintf(stderr, "failed to open input device: %s\n", strerror(errno));
+        exit(-1);
+    }
+    char name[256] = "Unknown";
+    ioctl(fd, EVIOCGNAME(sizeof(name)), name);
+    printf("Input device name: \"%s\"\n", name);
+
     init_egl(p_state);
+    printf("after init_egl\n");
 
     init_dispmanx(p_state);
+    printf("after init_dispmanx\n");
     
     egl_from_dispmanx(p_state);
     

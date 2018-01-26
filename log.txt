@@ -1,0 +1,8 @@
+2018-01-26
+==========
+
+- Had to edit /boot/config.txt and comment out "dtoverlay=vc4-kms-v3d" to be able to make eglGetDisplay() work, see https://raspberrypi.stackexchange.com/questions/56124/eglgetdisplay-fails-on-raspberry-3
+
+- next problem: how to prevent display from going into sleep mode
+	- temporary workaround: re-enable X server
+	- also: example code works even when X server is running
