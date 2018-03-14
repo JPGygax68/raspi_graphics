@@ -11,7 +11,7 @@ set(EGL_LIBS "EGL;GLESv2")
 
 link_directories(${DMX_LIBDIRS} ${EGL_LIBDIRS})
 
-add_executable(gfxtest main.cpp)
+add_executable(gfxtest main.cpp display.cpp)
 
 target_include_directories(gfxtest PRIVATE ${DMX_INC})
 target_link_libraries(gfxtest PRIVATE ${DMX_LIBS} ${EGL_LIBS})
